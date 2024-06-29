@@ -13,7 +13,15 @@ class Bootstrap
 	{
 		$configurator = new Configurator;
 		$appDir = dirname(__DIR__);
+        $feedDirectory = realpath(__DIR__ . '/../www/feed/');
+        $srcDirectory = realpath(__DIR__ . '/../src/');
 
+        $configurator->addStaticParameters([
+            'feedDirectory' => $feedDirectory,
+            'srcDir' => $srcDirectory,
+        ]);
+
+        $configurator->setDebugMode(true);
 		//$configurator->setDebugMode('secret@23.75.345.200'); // enable for your remote IP
 		$configurator->enableTracy($appDir . '/log');
 

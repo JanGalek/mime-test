@@ -1,6 +1,5 @@
 parameters:
 
-
 application:
 	errorPresenter:
 		4xx: Error:Error4xx

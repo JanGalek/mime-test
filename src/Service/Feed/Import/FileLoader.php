@@ -5,5 +5,5 @@ namespace Mime\Service\Feed\Import;
 
 interface FileLoader
 {
-
+    public function load();
 }

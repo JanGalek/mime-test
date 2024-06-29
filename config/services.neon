@@ -1,9 +1,25 @@
 services:
 	- App\Core\RouterFactory::createRouter
+	- Mime\Service\Feed\Import\JsonLoader(%feedDirectory%)
 
+
+extensions:
+	console: Contributte\Console\DI\ConsoleExtension(%consoleMode%)
+
+console:
+	name: Mime
+	version: '1.0'
+	catchExceptions: true
+	autoExit: true
+	url: http://mime.test.local
 
 search:
 	-	in: %appDir%
 		classes:
 			- *Factory
 			- *Facade
+	- in: %srcDir%
+		exclude:
+			files:
+				- Model\*.php
+
