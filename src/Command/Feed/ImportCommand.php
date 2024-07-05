@@ -17,14 +17,17 @@ use Mime\Service\Feed\Import\JsonLoader;
 class ImportCommand extends Command
 {
     public function __construct(
-        private JsonLoader $loader
+        private JsonLoader $loader,
+        ?string $name = null,
     )
     {
-
+        parent::__construct($name);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->loader->load();
+        $result = $this->loader->load();
+
+        return 0;
     }
 }
