@@ -33,32 +33,66 @@ class JsonLoader implements FileLoader
         $this->categories = new ArrayCollection();
     }
 
-    public function load(): Collection
+    public function load(): array
     {
        foreach ( Finder::findFiles(self::FILE_CATEGORY_FILE_MASK)->in($this->directory) as $file) {
            $data = json_decode($file->read(), true);
-           $this->loadMainCategory($data['vehicle'], $data['categories']);
-           dump(array_keys($data));
+           unset($data['version'], $data['generated_at'], $data['alternatives']);
+           $category = $this->loadMainCategory($data['vehicle'], $data['categories']);
        }
 
-        foreach ( Finder::findFiles('*.json')->exclude(self::FILE_CATEGORY_FILE_MASK)->in($this->directory) as $file) {
-            if ($file->getFilename() === self::FILE_VEHICLES) {
-                $data = json_decode($file->read(), true);
-                dump($data);
+       //dump(json_encode($this->products->toArray()));
+
+       return $this->products->toArray();
+    }
+
+    protected function validate()
+    {
+
+    }
+
+    protected function loadProducts(Category $category, array $rawProducts): void
+    {
+        foreach ($rawProducts as $rawProduct) {
+            $p = $rawProduct['product'];
+            if (($product = $this->products->findFirst(function (int $key, Product $product) use ($p) {
+                return $product->getNumber() === $p['product_no'];
+            })) === null) {
+                $product = new Product(
+                    $p['name'],
+                    $p['product_no'],
+                    $p['vat_percent'],
+                    $p['unit_price_incl_vat'] !== null ? $p['unit_price_incl_vat'] : 0
+                );
+            }
+
+            $category->addProduct($product);
+
+            if (!$this->products->contains($product)) {
+                $this->products->add($product);
+            }
+        }
+    }
+
+    protected function loadSubCategories(Category $mainCategory, array $subCategories): Category
+    {
+        foreach ($subCategories as $subCategory) {
+            $category = new Category($subCategory['name'], $mainCategory);
+            $mainCategory->addChild($category);
+            $products = $subCategory['spare_parts'];
+            $this->loadProducts($category, $products);
+            if (isset($subCategory['categories'])) {
+                return $this->loadSubCategories($category, $subCategory['categories']);
             }
         }
 
-       return $this->categories;
+        return $mainCategory;
     }
 
-    protected function loadProduct($data): void
-    {
-    }
-
-    protected function loadMainCategory(array $vehicle, array $categories): void
+    protected function loadMainCategory(array $vehicle, array $categories): Category
     {
         $parts = explode('/', $vehicle['name']);
-        $nameLevel1 = $parts[0];
+        $nameLevel1 = trim($parts[0]);
 
         if (!$this->categories->offsetExists($nameLevel1)) {
             $main = new Category($nameLevel1);
@@ -67,16 +101,19 @@ class JsonLoader implements FileLoader
             $main = $this->categories->offsetGet($nameLevel1);
         }
 
-        //dump($categories);
-
         if (isset($parts[1])) {
-            $nameLevel2 = $parts[1];
+            $nameLevel2 = trim($parts[1]);
             if (!$this->categories->offsetExists($nameLevel2)) {
                 $this->categories->set($nameLevel2, new Category($nameLevel2, $this->categories->offsetGet($nameLevel1)));
             }
             $subcategory = new Category($nameLevel2, $main);
 
             $main->addChild($subcategory);
+            $this->loadSubCategories($subcategory, $categories);
+            return $subcategory;
         }
+
+        $subCategories = $this->loadSubCategories($main, $categories);
+        return $main;
     }
 }

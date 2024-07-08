@@ -7,5 +7,5 @@ use Doctrine\Common\Collections\Collection;
 
 interface FileLoader
 {
-    public function load(): Collection;
+    public function load(): array;
 }

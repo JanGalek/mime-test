@@ -4,17 +4,23 @@ declare(strict_types=1);
 
 namespace Mime\Model;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use JsonSerializable;
 use Mime\Model\Collection\CategoryCollection;
 
-class Category
+class Category implements JsonSerializable
 {
     private CategoryCollection $children;
+
+    /** @var ArrayCollection<int, Product> */
+    private ArrayCollection $products;
 
     public function __construct(
         private string $name,
         private ?Category $parent = null,
     ) {
         $this->children = new CategoryCollection();
+        $this->products = new ArrayCollection();
     }
 
     public function getName(): string
@@ -60,4 +66,39 @@ class Category
         return $this;
     }
 
+    public function getProduct(string $number): ?Product
+    {
+        return $this->products->findFirst(function (int $key, Product $product) use ($number) {
+            return $product->getNumber() === $number;
+        });
+    }
+
+    public function addProduct(Product $product): self
+    {
+        if ($this->getProduct($product->getNumber()) === null) {
+            $this->products->add($product);
+            $product->addCategory($this);
+        }
+
+        return $this;
+    }
+
+    public function getProducts(): ArrayCollection
+    {
+        return $this->products;
+    }
+
+    public function setProducts(ArrayCollection $products): void
+    {
+        $this->products = $products;
+    }
+
+
+    public function jsonSerialize(): array
+    {
+        return [
+            'name' => $this->name,
+            'parent' => $this->parent?->jsonSerialize(),
+        ];
+    }
 }

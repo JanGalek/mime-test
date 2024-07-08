@@ -6,8 +6,9 @@ namespace Mime\Model;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use JsonSerializable;
 
-class Product
+class Product implements JsonSerializable
 {
     private Collection $categories;
 
@@ -86,5 +87,34 @@ class Product
         }
 
         return $this->priceWithVat * ($this->getVatPercentageCoefficient() / 100 );
+    }
+
+
+    public function existsCategory(Category $category): bool
+    {
+        return $this->categories->contains($category);
+    }
+
+    public function addCategory(Category $category): self
+    {
+        if (!$this->existsCategory($category)) {
+            $this->categories->add($category);
+        }
+
+        return $this;
+    }
+
+    public function jsonSerialize(): array
+    {
+        return [
+            'number' => $this->number,
+            'name' => $this->name,
+            'price' => [
+                'withVat' => $this->getPriceWithVat(),
+                'withoutVat' => $this->getPriceWithoutVat(),
+                'vatPercentage' => $this->vatPercentage,
+            ],
+            'categories' => $this->categories->toArray(),
+        ];
     }
 }

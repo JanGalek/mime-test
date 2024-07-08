@@ -16,6 +16,6 @@ final class HomePresenter extends Nette\Application\UI\Presenter
 
     public function renderDefault()
     {
-        $this->loader->load();
+        $this->sendJson($this->loader->load());
     }
 }
